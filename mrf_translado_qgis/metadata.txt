@@ -1,0 +1,31 @@
+[general]
+name=MRF Translado GNSS
+qgisMinimumVersion=3.22
+qgisMaximumVersion=4.99
+description=Ferramenta profissional para translado de coordenadas GNSS com suporte a PPP IBGE e Memorial SIGEF, incluindo geração de relatório técnico e integração com QGIS.
+version=1.0.0
+author=Marcos Lopes - MRF Consultoria
+email=contato@mrfconsultoria.com.br
+
+about=O plugin MRF Translado GNSS foi desenvolvido para automatizar o processo de ajuste de coordenadas georreferenciadas no padrão exigido pelo INCRA/SIGEF. A ferramenta permite importar dados de levantamento GNSS, utilizar coordenadas provenientes de PPP IBGE ou Memorial SIGEF, realizar o cálculo de translado com precisão, gerar camadas diretamente no QGIS e emitir relatório técnico completo. O plugin é voltado para profissionais de agrimensura, georreferenciamento de imóveis rurais e topografia, oferecendo uma solução prática, confiável e integrada ao fluxo de trabalho no QGIS.
+
+tracker=https://github.com/Socramac/mrf-translado-gnss/issues
+repository=https://github.com/Socramac/mrf-translado-gnss
+
+hasProcessingProvider=False
+
+# Histórico de versões
+changelog=
+  1.0.0 - Versão inicial publicada. Inclui importação de PPP IBGE e Memorial SIGEF, cálculo de translado, geração de camadas no QGIS, exportação de dados ajustados e relatório técnico completo.
+
+# Tags para busca no repositório QGIS
+tags=GNSS, PPP, SIGEF, INCRA, georreferenciamento, topografia, agrimensura, cadastro rural, RTK, coordenadas, QGIS, Brasil
+
+homepage=https://github.com/Socramac/mrf-translado-gnss/wiki
+category=Vector
+icon=icons/plugin_icon.svg
+
+experimental=False
+server=False
+supportsQt6=True
+deprecated=False
