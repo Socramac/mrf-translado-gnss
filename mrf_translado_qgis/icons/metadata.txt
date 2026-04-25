@@ -1,0 +1,22 @@
+[general]
+name=MRF Translado GNSS
+qgisMinimumVersion=3.22
+qgisMaximumVersion=4.99
+version=1.2.0
+author=Marcos Lopes - MRF Consultoria
+email=contato@mrfconsultoria.com.br
+
+description=QGIS plugin for GNSS coordinate translation with PPP IBGE and SIGEF Memorial support, variance propagation, TXT template export, row editing and professional PDF reporting.
+
+about=The MRF Translado GNSS plugin automates coordinate adjustment processes according to Brazilian INCRA/SIGEF standards. It allows GNSS data import, coordinate translation using PPP IBGE or SIGEF Memorial as reference, layer creation in QGIS, and technical report generation in PDF format. This version includes optional variance propagation, automatic disabling of variance propagation for SIGEF Memorial, explanatory help for variance propagation, and TXT template export for standardized data input. This plugin requires external Python libraries such as pandas and pdfplumber. Installation instructions are available in the repository.
+
+homepage=https://github.com/Socramac/mrf-translado-gnss#readme
+repository=https://github.com/Socramac/mrf-translado-gnss
+tracker=https://github.com/Socramac/mrf-translado-gnss/issues
+
+category=Vector
+tags=qgis,gnss,georeferencing,coordinates,ppp,sigef,topography
+
+license=GPL-2.0-or-later
+experimental=False
+deprecated=False
