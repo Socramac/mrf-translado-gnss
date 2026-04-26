@@ -35,3 +35,11 @@ jobs:
           files: mrf_translado_qgis.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install qgis-plugin-ci
+        run: pip install qgis-plugin-ci
+
+      - name: Publish plugin to QGIS
+        run: |
+          qgis-plugin-ci release ${{ steps.version.outputs.VERSION }} \
+          --qgis-token ${{ secrets.QGIS_PLUGIN_TOKEN }}
