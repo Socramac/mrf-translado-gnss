@@ -1,0 +1,4 @@
+[plugin]
+plugin_path = mrf_translado_qgis
+github_organization_slug = Socramac
+project_slug = mrf-translado-gnss
