@@ -42,4 +42,5 @@ jobs:
       - name: Publish plugin to QGIS
         run: |
           qgis-plugin-ci release ${{ steps.version.outputs.VERSION }} \
-          --qgis-token ${{ secrets.QGIS_PLUGIN_TOKEN }}
+          --osgeo-username Socramac \
+          --osgeo-password ${{ secrets.QGIS_PLUGIN_TOKEN }}
