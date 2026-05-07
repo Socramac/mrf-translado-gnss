@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Optional
 
 from qgis.PyQt.QtCore import QTimer, Qt, QVariant
+from qgis.core import QgsCoordinateReferenceSystem, QgsProject
+from qgis.gui import QgsProjectionSelectionWidget
 from qgis.PyQt.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -49,6 +51,7 @@ from .core.translado_core import (
 CONFIG_FILE = Path.home() / ".mrf_translado_qgis_emitente.json"
 CURRENT_VERSION = "1.2.0"
 VERSION_URL = "https://raw.githubusercontent.com/Socramac/mrf-translado-gnss/main/version.txt"
+CRS_CONFIG_FILE = Path.home() / ".mrf_translado_qgis_crs.txt"
 
 
 class EmitenteDialog(QDialog):
@@ -160,7 +163,8 @@ class MRFTransladoDialog(QDialog):
 
         self.df = None
         self.result_df = None
-        self.coord_line = "Sistema de Coordenadas: SIRGAS 2000 / UTM zone 19S"
+        self.coord_line = "Sistema de Coordenadas: não definido"
+        self.selected_crs = QgsCoordinateReferenceSystem()
         self.base_data: Optional[PointData] = None
         self.ppp_data: Optional[PPPData] = None
         self.emitente = self.load_emitente()
@@ -307,6 +311,19 @@ class MRFTransladoDialog(QDialog):
         left_layout = QVBoxLayout(left)
         splitter.addWidget(left)
 
+        grp_crs = QGroupBox("Sistema de Coordenadas (CRS)")
+        crs_layout = QVBoxLayout(grp_crs)
+        self.crs_selector = QgsProjectionSelectionWidget()
+        self.crs_selector.setOptionVisible(QgsProjectionSelectionWidget.CrsNotSet, True)
+        self.crs_selector.crsChanged.connect(self.on_crs_changed)
+        self.crs_status = QLabel("Selecione um CRS projetado UTM em metros para habilitar o plugin.")
+        self.crs_status.setWordWrap(True)
+        crs_layout.addWidget(self.crs_selector)
+        crs_layout.addWidget(self.crs_status)
+        left_layout.addWidget(grp_crs)
+
+        self.load_initial_crs()
+
         grp_base = QGroupBox("Base levantada")
         base_form = QFormLayout(grp_base)
         self.base_name = QLineEdit()
@@ -395,7 +412,7 @@ class MRFTransladoDialog(QDialog):
 
     def check_for_updates(self):
         try:
-            latest = urlopen(VERSION_URL, timeout=4)  # nosec.read().decode("utf-8").strip()
+            latest = urlopen(VERSION_URL, timeout=4).read().decode("utf-8").strip()  # nosec
             if not latest:
                 return
 
@@ -470,6 +487,80 @@ class MRFTransladoDialog(QDialog):
         self.populate_table(current_df)
         self.iface.messageBar().pushSuccess("MRF Translado GNSS", "Linha excluída com sucesso.")
 
+    def load_initial_crs(self):
+        crs = QgsCoordinateReferenceSystem()
+
+        if CRS_CONFIG_FILE.exists():
+            try:
+                authid = CRS_CONFIG_FILE.read_text(encoding="utf-8").strip()
+                if authid:
+                    crs = QgsCoordinateReferenceSystem(authid)
+            except Exception:
+                crs = QgsCoordinateReferenceSystem()
+
+        if not crs.isValid():
+            try:
+                project_crs = QgsProject.instance().crs()
+                if project_crs and project_crs.isValid():
+                    crs = project_crs
+            except Exception:
+                crs = QgsCoordinateReferenceSystem()
+
+        if crs.isValid():
+            self.crs_selector.setCrs(crs)
+            self.on_crs_changed(crs)
+        else:
+            self.update_action_states(False)
+
+    def is_valid_utm_crs(self, crs: QgsCoordinateReferenceSystem) -> bool:
+        if crs is None or not crs.isValid():
+            return False
+        if crs.isGeographic():
+            return False
+
+        description = (crs.description() or "").upper()
+        authid = (crs.authid() or "").upper()
+        proj4 = (crs.toProj4() or "").upper()
+
+        return "UTM" in description or "+PROJ=UTM" in proj4 or "UTM" in authid
+
+    def on_crs_changed(self, crs: QgsCoordinateReferenceSystem):
+        self.selected_crs = crs
+
+        if not crs or not crs.isValid():
+            self.crs_status.setText("Selecione um CRS projetado UTM em metros para habilitar o plugin.")
+            self.update_action_states(False)
+            return
+
+        if not self.is_valid_utm_crs(crs):
+            self.crs_status.setText(
+                "CRS inválido para translado. Selecione um sistema projetado UTM em metros."
+            )
+            self.update_action_states(False)
+            return
+
+        self.coord_line = f"Sistema de Coordenadas: {crs.description()} ({crs.authid()})"
+        self.crs_status.setText(f"CRS selecionado: {crs.description()} ({crs.authid()})")
+        try:
+            CRS_CONFIG_FILE.write_text(crs.authid(), encoding="utf-8")
+        except Exception:
+            pass
+        self.update_action_states(True)
+
+    def update_action_states(self, enabled: bool):
+        buttons = [
+            self.btn_points,
+            self.btn_base,
+            self.btn_pdf,
+            self.btn_model,
+            self.btn_calc,
+            self.btn_layers,
+            self.btn_export,
+            self.btn_report,
+        ]
+        for button in buttons:
+            button.setEnabled(enabled)
+
     def update_mode_states(self):
         pdf_mode = self.radio_pdf.isChecked()
         self.tipo_pdf_label.setVisible(pdf_mode)
@@ -539,7 +630,8 @@ class MRFTransladoDialog(QDialog):
         if not path:
             return
         try:
-            self.df, self.coord_line = load_points_txt(path)
+            self.df, _ = load_points_txt(path)
+            self.coord_line = f"Sistema de Coordenadas: {self.selected_crs.description()} ({self.selected_crs.authid()})"
             self.populate_table(self.df)
             self.iface.messageBar().pushSuccess("MRF Translado GNSS", f"{len(self.df)} pontos importados.")
         except Exception as exc:
@@ -614,6 +706,14 @@ class MRFTransladoDialog(QDialog):
         )
 
     def calculate(self):
+        if not self.is_valid_utm_crs(self.selected_crs):
+            QMessageBox.warning(
+                self,
+                "MRF Translado GNSS",
+                "Selecione um CRS projetado UTM em metros antes de calcular.",
+            )
+            return
+
         if self.df is None:
             QMessageBox.warning(self, "MRF Translado GNSS", "Importe primeiro o TXT dos pontos.")
             return
@@ -652,13 +752,8 @@ class MRFTransladoDialog(QDialog):
         self.table.resizeColumnsToContents()
 
     def infer_epsg(self):
-        text = (self.coord_line or "").lower()
-        if "zone 19s" in text or "19s" in text:
-            return "EPSG:31979"
-        if "zone 20s" in text or "20s" in text:
-            return "EPSG:31980"
-        if "zone 18s" in text or "18s" in text:
-            return "EPSG:31978"
+        if self.selected_crs and self.selected_crs.isValid():
+            return self.selected_crs.authid()
         return "EPSG:31979"
 
     def create_layers(self):
@@ -668,7 +763,15 @@ class MRFTransladoDialog(QDialog):
             QMessageBox.warning(self, "MRF Translado GNSS", "Calcule o translado antes de criar camadas.")
             return
 
-        crs = self.infer_epsg()
+        if not self.is_valid_utm_crs(self.selected_crs):
+            QMessageBox.warning(
+                self,
+                "MRF Translado GNSS",
+                "Selecione um CRS projetado UTM em metros antes de criar camadas.",
+            )
+            return
+
+        crs = self.selected_crs.authid()
         original = QgsVectorLayer(f"Point?crs={crs}", "Pontos Originais", "memory")
         adjusted = QgsVectorLayer(f"Point?crs={crs}", "Pontos Ajustados", "memory")
         vectors = QgsVectorLayer(f"LineString?crs={crs}", "Vetores de Deslocamento", "memory")
@@ -715,6 +818,14 @@ class MRFTransladoDialog(QDialog):
         self.iface.messageBar().pushSuccess("MRF Translado GNSS", "Camadas criadas no projeto.")
 
     def export_txt(self):
+        if not self.is_valid_utm_crs(self.selected_crs):
+            QMessageBox.warning(
+                self,
+                "MRF Translado GNSS",
+                "Selecione um CRS projetado UTM em metros antes de exportar.",
+            )
+            return
+
         if self.result_df is None:
             QMessageBox.warning(self, "MRF Translado GNSS", "Calcule o translado antes de exportar.")
             return
@@ -728,6 +839,14 @@ class MRFTransladoDialog(QDialog):
             QMessageBox.critical(self, "MRF Translado GNSS", str(exc))
 
     def generate_report(self):
+        if not self.is_valid_utm_crs(self.selected_crs):
+            QMessageBox.warning(
+                self,
+                "MRF Translado GNSS",
+                "Selecione um CRS projetado UTM em metros antes de gerar o relatório.",
+            )
+            return
+
         if self.result_df is None or self.base_data is None or self.ppp_data is None:
             QMessageBox.warning(self, "MRF Translado GNSS", "Calcule o translado antes de gerar o PDF.")
             return
