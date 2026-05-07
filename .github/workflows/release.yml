@@ -41,6 +41,6 @@ jobs:
 
       - name: Publish plugin to QGIS
         run: |
+          cd mrf_translado_qgis
           qgis-plugin-ci release ${{ steps.version.outputs.VERSION }} \
-          --osgeo-username Socramac \
-          --osgeo-password ${{ secrets.QGIS_PLUGIN_TOKEN }}
+            --qgis-token ${{ secrets.QGIS_PLUGIN_TOKEN }}
