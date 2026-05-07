@@ -18,7 +18,9 @@ jobs:
 
       - name: Extract version
         id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        run: |
+          echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
       - name: Update version.txt
         run: echo "${{ steps.version.outputs.VERSION }}" > version.txt
@@ -41,6 +43,5 @@ jobs:
 
       - name: Publish plugin to QGIS
         run: |
-          cd mrf_translado_qgis
           qgis-plugin-ci release ${{ steps.version.outputs.VERSION }} \
-            --qgis-token ${{ secrets.QGIS_PLUGIN_TOKEN }}
+          --qgis-token ${{ secrets.QGIS_PLUGIN_TOKEN }}
