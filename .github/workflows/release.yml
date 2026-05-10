@@ -4,10 +4,10 @@ on:
   push:
     tags:
       - 'v*.*.*'
-      
+
 permissions:
   contents: write
-  
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -32,8 +32,8 @@ jobs:
         run: echo "${{ steps.version.outputs.VERSION }}" > version.txt
 
       - name: Create plugin ZIP
-        run: zip -r mrf_translado_qgis.zip mrf_translado_qgis -x "*.git*" -x "*__pycache__*" -x "*.pyc" -x "*.pyo" -x "*.DS_Store" -x "*.qrc"
-            
+        run: zip -r mrf_translado_qgis.zip mrf_translado_qgis
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -47,6 +47,4 @@ jobs:
         run: pip install qgis-plugin-ci
 
       - name: Publish plugin to QGIS
-        run: |
-          qgis-plugin-ci release ${{ steps.version.outputs.VERSION }} \
-          --qgis-token ${{ secrets.QGIS_PLUGIN_TOKEN }}
+        run: qgis-plugin-ci release ${{ steps.version.outputs.VERSION }} --qgis-token ${{ secrets.QGIS_PLUGIN_TOKEN }}
