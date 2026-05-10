@@ -32,14 +32,7 @@ jobs:
         run: echo "${{ steps.version.outputs.VERSION }}" > version.txt
 
       - name: Create plugin ZIP
-        run: |
-          zip -r mrf_translado_qgis.zip mrf_translado_qgis \
-          -x "*.git*" \
-          -x "*__pycache__*" \
-          -x "*.pyc" \
-          -x "*.pyo" \
-          -x "*.DS_Store" \
-          -x "*.qrc"
+        run: zip -r mrf_translado_qgis.zip mrf_translado_qgis -x "*.git*" -x "*__pycache__*" -x "*.pyc" -x "*.pyo" -x "*.DS_Store" -x "*.qrc"
             
       - name: Create Release
         uses: softprops/action-gh-release@v2
