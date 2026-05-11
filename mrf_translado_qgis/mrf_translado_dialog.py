@@ -224,7 +224,6 @@ class ScaleBarOverlay(QFrame):
         bar_h = 8
         seg_w = 54
         segments = 4
-
         font = QFont()
         font.setPointSize(8)
         font.setBold(True)
