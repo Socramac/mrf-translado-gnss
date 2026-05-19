@@ -2,7 +2,7 @@
 name=MRF Translado GNSS
 qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
-version=1.3.0
+version=2.0.0
 author=Marcos Lopes - MRF Consultoria
 email=contato@mrfconsultoria.com.br
 
@@ -10,9 +10,9 @@ description=Professional QGIS plugin for GNSS coordinate translation with integr
 
 about=The MRF Translado GNSS plugin automates coordinate adjustment workflows according to Brazilian INCRA/SIGEF standards. It supports GNSS TXT import, coordinate translation using PPP IBGE or SIGEF Memorial references, integrated graphical visualization with satellite imagery, vector rendering between translated points, dynamic scale bar, HUD overlays, variance propagation, standardized TXT export, QGIS layer generation and professional PDF technical reporting. This version introduces a modern GIS-oriented interface with interactive map controls and advanced visual validation tools for georeferencing workflows.
 
-homepage=https://github.com/Socramac/mrf-translado-gnss#readme
-repository=https://github.com/Socramac/mrf-translado-gnss
-tracker=https://github.com/Socramac/mrf-translado-gnss/issues
+homepage=https://github.com/Socramac/mrf-translado-qgis#readme
+repository=https://github.com/Socramac/mrf-translado-qgis
+tracker=https://github.com/Socramac/mrf-translado-qgis/issues
 
 category=Vector
 tags=GNSS,Georreferenciamento,SIGEF,INCRA,PPP IBGE,Topografia,Agrimensura,Cadastro Rural,Coordinate Translation,Geodesy,Surveying,QGIS,GIS

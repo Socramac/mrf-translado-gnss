@@ -113,7 +113,13 @@ def create_satellite_layer(provider_name: str) -> Optional[QgsRasterLayer]:
     return layer
 
 
-def build_visualization_layers(original_df, adjusted_df, known_base, crs: QgsCoordinateReferenceSystem, provider_name: str) -> List:
+def build_visualization_layers(
+    original_df,
+    adjusted_df,
+    known_base,
+    crs: QgsCoordinateReferenceSystem,
+    provider_name: str,
+) -> List:
     if crs is None or not crs.isValid():
         raise ValueError("CRS inválido para visualização.")
 

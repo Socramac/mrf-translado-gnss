@@ -42,6 +42,28 @@ class PPPData:
     source_pdf: Optional[str] = None
     source_kind: Optional[str] = None
     source_code: Optional[str] = None
+    session_start: Optional[str] = None
+    session_end: Optional[str] = None
+    reference_epoch: Optional[str] = None
+    orbit_type: Optional[str] = None
+    processed_frequency: Optional[str] = None
+    normal_height: Optional[float] = None
+    geoid_model: Optional[str] = None
+    geoid_factor: Optional[float] = None
+    geoid_uncertainty: Optional[float] = None
+    lat_20004: Optional[str] = None
+    lon_20004: Optional[str] = None
+    alt_20004: Optional[float] = None
+    utm_n_20004: Optional[float] = None
+    utm_e_20004: Optional[float] = None
+    lat_survey: Optional[str] = None
+    lon_survey: Optional[str] = None
+    alt_survey: Optional[float] = None
+    utm_n_survey: Optional[float] = None
+    utm_e_survey: Optional[float] = None
+    dn_epoch: Optional[float] = None
+    de_epoch: Optional[float] = None
+    dh_epoch: Optional[float] = None
 
 
 @dataclass
@@ -138,62 +160,110 @@ def parse_base_txt(path: str) -> PointData:
 
 def parse_ppp_pdf(path: str) -> PPPData:
     pdfplumber = _require_pdfplumber()
-
-    target_line = None
-    sigma_line = None
+    full_text_parts = []
     with pdfplumber.open(path) as pdf:
         for page in pdf.pages[:2]:
-            page_text = page.extract_text() or ""
-            for raw_line in page_text.splitlines():
-                line = raw_line.strip()
-                if not line:
-                    continue
-                if target_line is None and "Em 2000.4" in line:
-                    target_line = line
-                if sigma_line is None and "Sigma(95%)" in line:
-                    sigma_line = line
-                if target_line and sigma_line:
-                    break
-            if target_line and sigma_line:
-                break
+            full_text_parts.append(page.extract_text() or "")
+    full_text = "\n".join(full_text_parts)
+    lines = [line.strip() for line in full_text.splitlines() if line.strip()]
 
+    def _find(pattern: str, default: Optional[str] = None) -> Optional[str]:
+        match = re.search(pattern, full_text, flags=re.IGNORECASE)
+        return match.group(1).strip() if match else default
+
+    def _first_line_contains(token: str) -> Optional[str]:
+        for line in lines:
+            if token.lower() in line.lower():
+                return line
+        return None
+
+    def _extract_coord_line(line: str):
+        coord_pattern = re.compile(
+            r"(?P<lat>-?\d+°\s*\d+[´'’]\s*\d+(?:[,.]\d+)?[˝\"”]?)\s+"
+            r"(?P<lon>-?\d+°\s*\d+[´'’]\s*\d+(?:[,.]\d+)?[˝\"”]?)\s+"
+            r"(?P<alt>-?\d+(?:[,.]\d+)?)\s+"
+            r"(?P<north>\d{7,8}(?:[,.]\d+)?)\s+"
+            r"(?P<east>\d{5,6}(?:[,.]\d+)?)"
+        )
+        match = coord_pattern.search(line)
+        if match:
+            return {
+                "lat": match.group("lat").replace("´", "'").replace("˝", '"'),
+                "lon": match.group("lon").replace("´", "'").replace("˝", '"'),
+                "alt": normalize_number(match.group("alt")),
+                "north": normalize_number(match.group("north")),
+                "east": normalize_number(match.group("east")),
+            }
+        values = [normalize_number(item) for item in re.findall(r"-?\d+[\.,]\d+", line)]
+        norths = [value for value in values if 7000000 < value < 10000000]
+        easts = [value for value in values if 100000 < value < 900000]
+        smalls = [value for value in values if 0 < value < 10000 and abs(value - 2000.4) > 1e-6]
+        if not norths or not easts or not smalls:
+            raise ValueError("Não foi possível interpretar linha de coordenadas PPP.")
+        return {"lat": "", "lon": "", "alt": smalls[-1], "north": norths[-1], "east": easts[-1]}
+
+    target_line = _first_line_contains("Em 2000.4")
+    survey_line = _first_line_contains("Na data do levantamento")
+    sigma_line = _first_line_contains("Sigma(95%)")
     if not target_line:
         raise ValueError('Linha "Em 2000.4" não encontrada no PPP.')
 
-    values = [normalize_number(item) for item in re.findall(r"-?\d+[\.,]\d+", target_line)]
-    norths = [value for value in values if 7000000 < value < 10000000]
-    easts = [value for value in values if 100000 < value < 900000]
-    smalls = [value for value in values if 0 < value < 10000]
+    coord_20004 = _extract_coord_line(target_line)
+    coord_survey = _extract_coord_line(survey_line) if survey_line else None
 
-    if not norths or not easts:
-        raise ValueError("Não foi possível localizar UTM Norte/Este no PPP.")
-
-    north = norths[-1]
-    east = easts[-1]
-    h_candidates = [value for value in smalls if abs(value - 2000.4) > 1e-6 and value < 1000]
-
-    if not h_candidates:
-        raise ValueError("Não foi possível localizar a altitude no PPP.")
-
-    h = h_candidates[-1]
     sigma_n = sigma_e = sigma_h = None
-
     if sigma_line:
         sigmas = [normalize_number(item) for item in re.findall(r"\d+[\.,]\d+", sigma_line)]
         if len(sigmas) >= 3:
             sigma_n, sigma_e, sigma_h = sigmas[0], sigmas[1], sigmas[2]
 
+    inicio = _find(r"Início:[^\n]*?(\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2})")
+    fim = _find(r"Fim:[^\n]*?(\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2})")
+    orbit = _find(r"Órbitas dos satélites:\s*\d*\s*([A-ZÁÉÍÓÚÂÊÔÃÕÇ]+)")
+    freq = _find(r"Frequência processada:\s*([A-Z0-9]+)")
+    geoid_model = _find(r"Modelo:\s*([A-Za-z0-9_]+)")
+    geoid_factor = _find(r"Fator para Conversão \(m\):\s*([-\d,.]+)")
+    geoid_unc = _find(r"Incerteza \(m\):\s*([-\d,.]+)")
+    normal_height = _find(r"Altitude Normal \(m\):\s*([-\d,.]+)")
+
+    dn_epoch = de_epoch = dh_epoch = None
+    if coord_survey:
+        dn_epoch = coord_survey["north"] - coord_20004["north"]
+        de_epoch = coord_survey["east"] - coord_20004["east"]
+        dh_epoch = coord_survey["alt"] - coord_20004["alt"]
+
     return PPPData(
-        east=east,
-        north=north,
-        h=h,
+        east=coord_20004["east"],
+        north=coord_20004["north"],
+        h=coord_20004["alt"],
         sigma_e=sigma_e,
         sigma_n=sigma_n,
         sigma_h=sigma_h,
         source_pdf=path,
         source_kind="PPP_IBGE",
+        session_start=inicio,
+        session_end=fim,
+        reference_epoch="2000.4",
+        orbit_type=orbit,
+        processed_frequency=freq,
+        normal_height=normalize_number(normal_height) if normal_height else None,
+        geoid_model=geoid_model,
+        geoid_factor=normalize_number(geoid_factor) if geoid_factor else None,
+        geoid_uncertainty=normalize_number(geoid_unc) if geoid_unc else None,
+        lat_20004=coord_20004["lat"],
+        lon_20004=coord_20004["lon"],
+        alt_20004=coord_20004["alt"],
+        utm_n_20004=coord_20004["north"],
+        utm_e_20004=coord_20004["east"],
+        lat_survey=coord_survey["lat"] if coord_survey else None,
+        lon_survey=coord_survey["lon"] if coord_survey else None,
+        alt_survey=coord_survey["alt"] if coord_survey else None,
+        utm_n_survey=coord_survey["north"] if coord_survey else None,
+        utm_e_survey=coord_survey["east"] if coord_survey else None,
+        dn_epoch=dn_epoch,
+        de_epoch=de_epoch,
+        dh_epoch=dh_epoch,
     )
-
 
 def gms_para_decimal(texto: str) -> float:
     normalized = (
@@ -248,6 +318,7 @@ def parse_memorial_sigef_pdf(path: str):
     pdfplumber = _require_pdfplumber()
 
     vertices = []
+    full_text_parts = []
     pattern = re.compile(
         r'^(?P<codigo>[A-Z0-9\-]+)\s+'
         r'(?P<lon>-?\d+°\d+[\'’]\d+(?:[.,]\d+)?"?)\s+'
@@ -258,6 +329,7 @@ def parse_memorial_sigef_pdf(path: str):
     with pdfplumber.open(path) as pdf:
         for page in pdf.pages:
             text = page.extract_text() or ""
+            full_text_parts.append(text)
             for raw_line in text.splitlines():
                 line = raw_line.strip()
                 if not line:
@@ -276,8 +348,35 @@ def parse_memorial_sigef_pdf(path: str):
     if not vertices:
         raise ValueError("Nenhum vértice encontrado no Memorial SIGEF.")
 
-    return vertices
+    full_text = "\n".join(full_text_parts)
 
+    def _find(pattern_text: str, default: str = "") -> str:
+        match = re.search(pattern_text, full_text, flags=re.IGNORECASE)
+        return match.group(1).strip() if match else default
+
+    denominacao = _find(r"Denominação:\s*(.+)")
+    sistema = _find(r"Sistema Geodésico de referência:\s*([^\n]+?)(?:\s+Documento|\n|$)", "SIRGAS 2000")
+    credenciado = _find(r"Código de credenciamento:\s*([A-Z0-9]+)")
+    documento_rt = _find(r"Documento de RT:\s*([^\n]+)")
+    data_cert = _find(r"Data Certificação:\s*([^\n]+)")
+    status = ""
+    if "Certificada - Sem Confirmação de Registro em Cartório" in full_text:
+        status = "Certificada - Sem Confirmação de Registro em Cartório"
+    elif "certificada" in full_text.lower():
+        status = "Certificada"
+
+    metadata = {
+        "denominacao": denominacao,
+        "sistema_geodesico": sistema,
+        "credenciado": credenciado,
+        "documento_rt": documento_rt,
+        "data_certificacao": data_cert,
+        "status_certificacao": status,
+    }
+    for vertex in vertices:
+        vertex.update(metadata)
+
+    return vertices
 
 def memorial_vertex_to_pppdata(vertex: dict, source_pdf: Optional[str] = None) -> PPPData:
     este, norte, _ = converter_gms_para_utm_sirgas2000(

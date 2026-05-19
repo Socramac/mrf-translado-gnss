@@ -1,167 +1,30 @@
-# MRF Translado GNSS
+# MRF Translado GNSS v2.0.0
 
-QGIS plugin for GNSS coordinate translation (translado) using PPP IBGE or SIGEF Memorial as reference, following Brazilian INCRA/SIGEF standards.
+Plugin QGIS para translado de coordenadas GNSS, controle de qualidade, importação de PPP-IBGE e Memorial SIGEF, geração de camadas, exportação TXT e relatório técnico em PDF.
 
----
+## Recursos principais
 
-## Overview
+- Importação de TXT de pontos GNSS.
+- Translado de coordenadas com base levantada e PPP/Base conhecida.
+- Suporte a PPP-IBGE.
+- Suporte a Memorial SIGEF.
+- Propagação de variância.
+- Dashboard QC.
+- Visualização cartográfica integrada.
+- Geração de camadas no QGIS.
+- Filtro de precisão posicional conforme MTGIR 1.4.3 e 1.4.4.
+- Exportação de TXT filtrado.
+- Relatório técnico em PDF.
 
-MRF Translado GNSS is a professional tool designed to automate coordinate adjustment processes for georeferenced data.
+## Compatibilidade
 
-The plugin allows users to import GNSS survey data, apply coordinate translation based on known reference points (PPP IBGE or SIGEF Memorial), and generate adjusted outputs directly within QGIS.
+- QGIS 3.22 ou superior.
+- Testado em QGIS 3.40.
 
----
+## Autor
 
-## Features
+Marcos Lopes - MRF Consultoria
 
-- Import GNSS points (TXT format)
-- Import surveyed base coordinates
-- Import PPP IBGE reports
-- Import SIGEF Memorial with automatic DMS to UTM conversion
-- Select reference vertex from Memorial
-- Perform coordinate translation (translado)
-- Optional variance propagation
-- Automatic disabling of variance propagation for SIGEF Memorial
-- Generate QGIS layers (points and displacement vectors)
-- Export adjusted coordinates (TXT)
-- Generate professional technical PDF reports
-- Export TXT template for standardized input data
-- Row deletion feature (right-click)
-- Professional signature block in PDF report
-- Integrated GIS visualization canvas
-- Satellite imagery visualization
-- Interactive map controls
-- Dynamic graphical scale bar
-- HUD coordinate overlays
+## Licença
 
----
-
-## What's New
-
-### Version 1.3.0
-
-#### New graphical interface
-- Integrated interactive map visualization
-- Satellite imagery support (Esri / Google / Bing)
-- Modern map navigation controls
-- Dynamic HUD overlays
-- Native graphical scale bar using QPainter
-- Visual vector rendering between translated coordinates
-- Improved dark-theme compatibility
-- Enhanced GIS-oriented workflow
-
-#### Functional improvements
-- Row deletion feature (right-click)
-- Smart data cleaning system
-- Improved visualization rendering performance
-- Professional signature block in PDF report
-- Support for CPF, professional council and registration fields
-- Better organization of interface panels and controls
-
----
-
-## Input TXT Format
-
-The plugin requires the following structure:
-
-Sistema de Coordenadas: SIRGAS 2000 / UTM zone 19S
-Nome;Status;Este;Norte;Altitude Elipsoidal;DP E;DP N;DP U
-PONTO-01;FIXO;569204.950;8807268.244;253.826;0.0100;0.0100;0.0120
-
-### Notes:
-- The same format is used for rover points
-- For base import, use the same structure with only one record
-- A template file can be generated directly from the plugin interface
-
----
-
-## Variance Propagation
-
-The plugin includes an optional variance propagation feature.
-
-When enabled, the adjusted coordinate precision is recalculated considering:
-- original point sigmas (DP E, DP N, DP U)
-- PPP base uncertainty
-
-When using SIGEF Memorial:
-- variance propagation is automatically disabled (no sigma information available)
-
----
-
-## Requirements
-
-- QGIS 3.22 or higher
-- Python libraries:
-  - pandas
-  - pdfplumber
-
-### Installing dependencies (Windows)
-
-Use OSGeo4W Shell:
-
-pip install pandas pdfplumber
-
----
-
-## Installation
-
-1. Open QGIS
-2. Go to Plugins → Manage and Install Plugins
-3. Install from ZIP or search after publication
-4. Activate the plugin
-
----
-
-## Usage
-
-1. Import GNSS points (TXT)
-2. Import base coordinates
-3. Import PPP IBGE or SIGEF Memorial
-4. Select the reference base point
-5. Run coordinate translation
-6. Export results or generate report
-
----
-
-## Output
-
-- Adjusted coordinate table
-- QGIS layers:
-  - Original points
-  - Adjusted points
-  - Displacement vectors
-- Integrated graphical visualization canvas
-- Satellite map visualization
-- Dynamic coordinate HUD
-- Interactive graphical scale bar
-- Technical report in PDF format
-
----
-
-## Target Users
-
-This plugin is intended for:
-
-- Surveying professionals
-- Georeferencing specialists
-- Rural property registration technicians
-- GNSS and RTK users working under Brazilian INCRA/SIGEF standards
-
----
-
-## Repository
-
-https://github.com/Socramac/mrf_translado_qgis
-
----
-
-## Author
-
-Marcos Lopes  
-MRF Consultoria
-
----
-
-## License
-
-GNU General Public License v2.0 or later
+Consulte o arquivo `LICENSE`.
